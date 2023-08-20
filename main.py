@@ -12,12 +12,11 @@ def print_store_menu():
     '''
     print(store_menu)
 
-
 def list_all_products_in_store(store_obj):
     products = store_obj.get_all_products()
     print('--------------------------------------------------------')
-    for index, product in enumerate(products, start=1): #enumerate() takes iterable and returns pairs of index and value
-        print(f"{index}. {product['name']}, Price: ${product['price']}, Quantity: {product['quantity']} ")
+    for index, product in enumerate(products, start=1):
+        print(f"{index}. {product.show()}")
     print('--------------------------------------------------------')
 
 
@@ -30,7 +29,7 @@ def show_total_amount_in_store(store_obj): #shows available stock
 def make_an_order(store_obj, product_list):
     list_all_products_in_store(store_obj)
 
-    shopping_list = []  #create shopping_list of tuples to use in store_obj.order(shopping_list) from store.py
+    shopping_list = []  # create shopping_list of tuples to use in store_obj.order(shopping_list) from store.py
     print("When you want to finish order, enter empty text.")
     while True:
         selected_product = input("Enter product number you want to order: ")
@@ -39,18 +38,34 @@ def make_an_order(store_obj, product_list):
         selected_quantity = input("Enter the quantity you want to order: ")
 
         try:
-            product = product_list[int(selected_product) - 1] #retrieving the appropriate product from the product_list
-                # based on the user's selected product index (minus 1, to account for the 0-based indexing in the list)
+            product = product_list[int(selected_product) - 1]
             quantity = int(selected_quantity)
-            if quantity > product.quantity:
-                raise ValueError(f"Not enough quantity available for product: {product.name}")
-            shopping_list.append((product, quantity))
-            print(f"Product added to list! {product.name}, quantity: {quantity}")
-        except (ValueError, IndexError):
-            print(f"Invalid product number or quantity. Please try again.")
+
+            if quantity <= 0:
+                print("Error: Invalid quantity. It must be greater than zero.")
+                continue  # Prompt for input again
+
+            if isinstance(product, products.NonStockedProduct): #allow purchase on NonStocked (unlimited quantity = 0)
+                shopping_list.append((product, quantity))
+                print(f"Product added to list! {product.name}, quantity: {quantity}")
+
+            elif isinstance(product, products.LimitedProduct) and quantity > product.maximum:
+                print(f"Error: Invalid quantity. Purchase of {product.name} is limited to {product.maximum} per order.")
+                continue
+
+            elif quantity > product.quantity:
+                print(f"Error: Not enough quantity available for product: {product.name}")
+                continue
+
+            else: #normal product order
+                shopping_list.append((product, quantity))
+                print(f"Product added to list! {product.name}, quantity: {quantity}")
+
+        except (ValueError, IndexError) as e:
+            print(f"Error: {e}. Please try again.")
 
     order_total = store_obj.order(shopping_list)
-    order_total = "{:.2f}".format(order_total) #format to 2 decimal places
+    order_total = "{:.2f}".format(order_total)
     print("********")
     print(f"Order made! Total payment: ${order_total}")
 
@@ -75,11 +90,13 @@ def start(store_obj, product_list):
 
 def main():
     try:
-        product_list = [
-            products.Product("MacBook Air M2", price=1450, quantity=100),
-            products.Product("Bose QuietComfort Earbuds", price=250, quantity=500),
-            products.Product("Google Pixel 7", price=500, quantity=250)
-        ]
+        # setup initial stock of inventory
+        product_list = [products.Product("MacBook Air M2", price=1450, quantity=100),
+                        products.Product("Bose QuietComfort Earbuds", price=250, quantity=500),
+                        products.Product("Google Pixel 7", price=500, quantity=250),
+                        products.NonStockedProduct("Windows License", price=125),
+                        products.LimitedProduct("Shipping", price=10, quantity=250, maximum=1)
+                        ]
     except ValueError as e:
         print(f"Error while creating product: {e}")
         return

@@ -1,3 +1,5 @@
+from products import NonStockedProduct, LimitedProduct
+
 class Store():
     '''Holds all instances of products, and will allow the user to make a purchase of multiple products at once.'''
     def __init__(self, products=None): #set default if not provided
@@ -30,14 +32,8 @@ class Store():
         '''Returns all products in the store that are active.'''
         active_products = []
         for product in self.list_of_products:
-            if product.quantity > 0 and product.is_active():
-                active_products.append(
-                    {
-                        "name": product.name,
-                        "price": product.price,
-                        "quantity": product.quantity,
-                    }
-                )
+            if product.is_active():
+                active_products.append(product)
         return active_products
 
 
@@ -50,16 +46,15 @@ class Store():
             if quantity <= 0:
                 raise ValueError("Invalid quantity. It must be greater than zero.")
 
-            available_quantity = product_obj.get_quantity()
-
-            if available_quantity >= quantity:
+            if isinstance(product_obj, NonStockedProduct): #allow purchase despite quantity=0
                 total_cost += product_obj.buy(quantity)
             else:
-                raise ValueError(
-                    f"Not enough quantity available for product: {product_obj.name}")
+                available_quantity = product_obj.get_quantity()
+                if available_quantity >= quantity:
+                    total_cost += product_obj.buy(quantity)
+                else:
+                    raise ValueError(
+                        f"Not enough quantity available for product: {product_obj.name}")
         return total_cost
-
-
-
 
 
