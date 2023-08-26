@@ -1,3 +1,6 @@
+import promotions
+
+
 class Product:
     '''The Product class represents a specific type of product available in the store.
         It encapsulates information about the product, including its name and price and quantity of items currently
@@ -17,7 +20,7 @@ class Product:
         self.price = price
         self.quantity = quantity
         self.active = True
-
+        self.promotion = None  # Initialize with promotions set to None initially
 
     def get_quantity(self) -> int:
         return self.quantity
@@ -42,7 +45,8 @@ class Product:
 
 
     def show(self) -> str:
-        return f"{self.name}, Price: ${self.price}, Quantity: {self.quantity}"
+        promotion_info = f"Promotion: {self.promotion.name}" if self.promotion else "Promotion: None"
+        return f"{self.name}, Price: ${self.price}, Quantity: {self.quantity}, {promotion_info}"
 
 
     def buy(self, quantity) -> float:
@@ -51,13 +55,25 @@ class Product:
         if quantity > self.quantity:
             raise ValueError("Not enough quantity available to buy.")
 
-        total_price_float = float(self.price * quantity)
+        total_price = 0.0
+        if self.promotion:
+            total_price = self.promotion.apply_promotion(self, quantity)
+        else:
+            total_price = float(self.price * quantity)
+
         self.quantity -= quantity   #remove bought products from product quantity in stock
 
         if self.quantity == 0:  #Out of Stock
             self.deactivate()
 
-        return total_price_float
+        return total_price
+
+    def get_promotion(self):
+        return self.promotion
+
+    def set_promotion(self, promotion):
+        self.promotion = promotion
+
 
 
 class NonStockedProduct(Product):
@@ -67,14 +83,20 @@ class NonStockedProduct(Product):
         super().__init__(name, price, 0)
 
     def show(self) -> str:
-        return f"{self.name}, Price: ${self.price}, Quantity: Unlimited"
+        promotion_info = f"Promotion: {self.promotion.name}" if self.promotion else "Promotion: None"
+        return f"{self.name}, Price: ${self.price}, Quantity: Unlimited, {promotion_info}"
 
     def buy(self, quantity): #override buy from Product to allow purchase despite quantity = 0
         if quantity <= 0:
             raise ValueError("Invalid quantity. It must be greater than zero.")
 
-        total_price_float = float(self.price * quantity)
-        return total_price_float
+        total_price = 0.0
+        if self.promotion:
+            total_price = self.promotion.apply_promotion(self, quantity)
+        else:
+            total_price = float(self.price * quantity)
+
+        return total_price
 
 
 class LimitedProduct(Product):
@@ -85,7 +107,8 @@ class LimitedProduct(Product):
         self.maximum = maximum
 
     def show(self) -> str:
-        return f"{self.name}, Price: ${self.price}, Limited to {self.maximum} per order!"
+        promotion_info = f"Promotion: {self.promotion.name}" if self.promotion else "Promotion: None"
+        return f"{self.name}, Price: ${self.price}, Limited to {self.maximum} per order!, {promotion_info}"
 
     def buy(self, quantity): #override parent buy method to check maximum order not exceeded
         try:
@@ -96,7 +119,12 @@ class LimitedProduct(Product):
             if quantity > self.maximum:
                 raise ValueError(f"Invalid quantity. Purchase of this item is limited to {self.maximum} per order.")
 
-            total_price_float = float(self.price * quantity)
+            total_price = 0.0
+            if self.promotion:
+                total_price = self.promotion.apply_promotion(self, quantity)
+            else:
+                total_price = float(self.price * quantity)
+
             self.quantity -= quantity
 
             if self.quantity == 0:  # Out of Stock

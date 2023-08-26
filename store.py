@@ -1,5 +1,6 @@
 from products import NonStockedProduct, LimitedProduct
 
+
 class Store():
     '''Holds all instances of products, and will allow the user to make a purchase of multiple products at once.'''
     def __init__(self, products=None): #set default if not provided

@@ -47,6 +47,6 @@ class ThirdOneFree(Promotion):
 
     def apply_promotion(self, product, quantity):
         free_items = quantity // 3  # Calculate the number of items that will be free
-        total_cost = (quantity - free_items) * product_price
+        total_cost = (quantity - free_items) * product.price
 
         return total_cost
